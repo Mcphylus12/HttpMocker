@@ -4,6 +4,7 @@ using System.Net;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
+using System.Web;
 
 namespace HttpMocker;
 
@@ -122,7 +123,7 @@ public class Mocker : HttpMessageHandler
 
         var sstring = await requestMessage.Content.ReadAsStringAsync();
 
-        return JsonSerializer.Deserialize(sstring, param.ParameterType);
+        return JsonSerializer.Deserialize(sstring, param.ParameterType, new JsonSerializerOptions(JsonSerializerDefaults.Web));
     }
 
     private static object? FromQuery(System.Collections.Specialized.NameValueCollection queryParams, ParameterInfo param)
@@ -178,7 +179,7 @@ public class Mocker : HttpMessageHandler
 
     private HttpResponseMessage JsonResponse(int? code, object? obj)
     {
-        var json = obj != null ? JsonSerializer.Serialize(obj) : "";
+        var json = obj != null ? JsonSerializer.Serialize(obj, new JsonSerializerOptions(JsonSerializerDefaults.Web)) : "";
         return new HttpResponseMessage((HttpStatusCode)(code ?? 200))
         {
             Content = new StringContent(json, Encoding.UTF8, "application/json")
@@ -189,7 +190,7 @@ public class Mocker : HttpMessageHandler
     {
         if (template.Host != path.Host) return false;
 
-        var templateParts = template.AbsolutePath.Trim('/').ToLowerInvariant().Split('/');
+        var templateParts = HttpUtility.UrlDecode(template.AbsolutePath).Trim('/').ToLowerInvariant().Split('/');
         var pathParts = path.AbsolutePath.Trim('/').ToLowerInvariant().Split('/');
 
         if (templateParts.Length != pathParts.Length)
